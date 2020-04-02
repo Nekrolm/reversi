@@ -30,6 +30,7 @@ fn flip(p: PlayerId) -> PlayerId {
 pub type CellState = Option<PlayerId>;
 
 #[derive(Copy, Clone)]
+#[derive(PartialEq)]
 pub struct Cell {
     x: i32,
     y: i32
@@ -74,7 +75,7 @@ const DIRECTIONS: [Direction; 8] = [dir!(-1,-1), dir!(-1, 0), dir!(-1, 1),
 
 const VALID_INDEX_RANGE: Range<i32> = 0i32..(BOARD_SIZE as i32);
 
-fn advance(cell: Cell, dir: Direction) -> Cell {
+pub fn advance(cell: Cell, dir: Direction) -> Cell {
     return Cell { x: cell.x + dir.x, y: cell.y + dir.y }
 }
 

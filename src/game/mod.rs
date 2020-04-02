@@ -36,7 +36,7 @@ fn try_move_cell(player : &dyn player::Player, cell : board::Cell, board : &mut 
 
 
 impl Game  {
-    async fn step(&mut self) -> bool {
+    fn step(&mut self) -> bool {
         match &mut self.players {
             Players {current, next} => {
                 if !can_move(current.as_ref(), &self.board){
@@ -47,11 +47,11 @@ impl Game  {
                     return false;
                 }
                 use player::MoveResponse::{*};
-                match current.request_move(&self.board).await {
+                match current.request_move(&self.board) {
                     Move(cell) => {
                         match try_move_cell(current.as_ref(), cell, &mut self.board) {
                             None => self.players.flip(),
-                            Some(err) => current.notify_error(err).await
+                            Some(err) => current.notify_error(err)
                         }
                         return true;
                     }
@@ -61,13 +61,13 @@ impl Game  {
         }
     }
 
-    pub async fn run(& mut self) {
-        while self.step().await {}
+    pub fn run(& mut self) {
+        while self.step() {}
         let current_p_score = self.board.count(self.players.current.player_id());
         let next_p_score = self.board.count(self.players.next.player_id());
 
-        futures::join!(self.players.current.send_result(current_p_score, next_p_score),
-                       self.players.next.send_result(next_p_score, current_p_score));
+        self.players.current.send_result(current_p_score, next_p_score);
+        self.players.next.send_result(next_p_score, current_p_score);
     }
 
     pub fn new(first : Box<dyn player::Player>, second : Box<dyn player::Player>) -> Game {

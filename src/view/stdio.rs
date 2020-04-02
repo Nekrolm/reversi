@@ -39,13 +39,12 @@ fn draw_board(board: &board::Board) {
 }
 
 
-#[async_trait]
 impl Player for StdIOPlayer {
     fn player_id(&self) -> PlayerId {
         return self.id;
     }
 
-    async fn request_move(&mut self, board : &board::Board) -> MoveResponse {
+    fn request_move(&mut self, board : &board::Board) -> MoveResponse {
         use MoveResponse::{*};
         draw_board(board);
         println!("{} move: ", match self.id {
@@ -71,10 +70,10 @@ impl Player for StdIOPlayer {
         return Move(Cell::new( v[0], v[1]));
     }
 
-    async fn notify_error(&mut self, err : board::MoveError){
+    fn notify_error(&mut self, err : board::MoveError){
         println!("errr!");
     }
-    async fn send_result(&mut self, my_score : u32, other_score : u32){
+    fn send_result(&mut self, my_score : u32, other_score : u32){
         println!("Result: {} - {}", my_score, other_score);
     }
 }
