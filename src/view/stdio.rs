@@ -1,4 +1,6 @@
 use crate::game::player::Player;
+use crate::game::player::MoveResponse;
+pub use async_trait::async_trait;
 pub use crate::game::player::PlayerId;
 
 use crate::game::board;
@@ -27,20 +29,24 @@ fn draw_cell(cell : board::CellState){
 }
 
 fn draw_board(board: &board::Board) {
-    for x in 0..board.size() as i32{
-        for y in 0..board.size() as i32{
+    let range = 0..board.size() as i32;
+    for x in range.clone() {
+        for y in range.clone() {
             draw_cell(board[Cell::new(x, y)])
         }
         println!("|")
     }
 }
 
+
+#[async_trait]
 impl Player for StdIOPlayer {
     fn player_id(&self) -> PlayerId {
         return self.id;
     }
 
-    fn request_move(&mut self, board : &board::Board) -> Cell {
+    async fn request_move(&mut self, board : &board::Board) -> MoveResponse {
+        use MoveResponse::{*};
         draw_board(board);
         println!("{} move: ", match self.id {
             PlayerId::White => "O",
@@ -51,16 +57,24 @@ impl Player for StdIOPlayer {
 
 
         io::stdin().read_line(& mut input).unwrap();
+
+        if input.trim() == "exit" {
+            return Exit;
+        }
+
         let strs = input.split_whitespace()
             .map(|x| x.trim().parse::<i32>().unwrap());
         let v : Vec<i32> = strs.collect();
-        return Cell::new( v[0], v[1]);
+        if v.len() < 2 {
+            return Move(Cell::new(-1,-1));
+        }
+        return Move(Cell::new( v[0], v[1]));
     }
 
-    fn notify_error(&mut self, err : board::MoveError){
+    async fn notify_error(&mut self, err : board::MoveError){
         println!("errr!");
     }
-    fn send_result(&mut self, my_score : u32, other_score : u32){
+    async fn send_result(&mut self, my_score : u32, other_score : u32){
         println!("Result: {} - {}", my_score, other_score);
     }
 }

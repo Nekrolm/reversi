@@ -109,7 +109,7 @@ impl Board {
             cell_counter += 1;
             cell = advance(cell, direction);
         }
-        return self.is_valid_cell(cell) && cell_counter > 0
+        return self.is_valid_cell(cell) && cell_counter > 0 && !self[cell].is_none()
     }
 
     fn check_move(&self, cell: Cell, player: PlayerId) -> bool {
@@ -164,6 +164,9 @@ impl Board {
 
     fn apply_move_direction(&mut self, start: Cell, direction: Direction, player: PlayerId) {
         let mut cell = advance(start, direction);
+        if !self.check_direction(start, direction, flip(player)) {
+            return;
+        }
         while self.is_valid_cell(cell) && match self[cell] {
             Some(filled) => player != filled,
             None => false

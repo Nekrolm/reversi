@@ -2,6 +2,7 @@
 use std::borrow::{BorrowMut, Borrow};
 use std::mem::swap;
 use std::ops::Deref;
+use futures;
 use crate::game::board::Board;
 
 pub mod board;
@@ -35,7 +36,7 @@ fn try_move_cell(player : &dyn player::Player, cell : board::Cell, board : &mut 
 
 
 impl Game  {
-    fn step(&mut self) -> bool {
+    async fn step(&mut self) -> bool {
         match &mut self.players {
             Players {current, next} => {
                 if !can_move(current.as_ref(), &self.board){
@@ -45,22 +46,28 @@ impl Game  {
                     }
                     return false;
                 }
-                let cell = current.request_move(&self.board);
-                match try_move_cell(current.as_ref(), cell, &mut self.board) {
-                    None => self.players.flip(),
-                    Some(err) => current.notify_error(err)
+                use player::MoveResponse::{*};
+                match current.request_move(&self.board).await {
+                    Move(cell) => {
+                        match try_move_cell(current.as_ref(), cell, &mut self.board) {
+                            None => self.players.flip(),
+                            Some(err) => current.notify_error(err).await
+                        }
+                        return true;
+                    }
+                    Exit => false
                 }
-                return true
             }
         }
     }
 
-    pub fn run(& mut self) {
-        while self.step() {}
+    pub async fn run(& mut self) {
+        while self.step().await {}
         let current_p_score = self.board.count(self.players.current.player_id());
         let next_p_score = self.board.count(self.players.next.player_id());
-        self.players.current.send_result(current_p_score, next_p_score);
-        self.players.next.send_result(next_p_score, current_p_score);
+
+        futures::join!(self.players.current.send_result(current_p_score, next_p_score),
+                       self.players.next.send_result(next_p_score, current_p_score));
     }
 
     pub fn new(first : Box<dyn player::Player>, second : Box<dyn player::Player>) -> Game {
