@@ -1,7 +1,13 @@
 use crate::game::board;
 use crate::game::board::Cell;
 
+
+
 pub use board::PlayerId;
+
+pub mod user_player;
+pub mod dummy_player;
+
 
 pub enum MoveResponse {
     Move(Cell),

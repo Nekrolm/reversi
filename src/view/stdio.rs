@@ -1,22 +1,14 @@
-use crate::game::player::Player;
-use crate::game::player::MoveResponse;
-pub use async_trait::async_trait;
-pub use crate::game::player::PlayerId;
+use crate::player::MoveResponse;
+pub use crate::player::PlayerId;
 
 use crate::game::board;
 use crate::game::board::Cell;
+use crate::view::BoardView;
 
 use std::io;
 use std::ops::Range;
 
-pub struct StdIOPlayer {
-    id : PlayerId
-}
-
-impl StdIOPlayer {
-    pub fn new (player : PlayerId) -> StdIOPlayer {
-        return StdIOPlayer{id : player};
-    }
+pub struct StdIOView {
 }
 
 
@@ -39,15 +31,11 @@ fn draw_board(board: &board::Board) {
 }
 
 
-impl Player for StdIOPlayer {
-    fn player_id(&self) -> PlayerId {
-        return self.id;
-    }
-
-    fn request_move(&mut self, board : &board::Board) -> MoveResponse {
+impl BoardView for StdIOView {
+    fn input(&self, player : PlayerId,  board : &board::Board) -> MoveResponse {
         use MoveResponse::{*};
         draw_board(board);
-        println!("{} move: ", match self.id {
+        println!("{} move: ", match player {
             PlayerId::White => "O",
             PlayerId::Black => "X",
         });
@@ -70,10 +58,10 @@ impl Player for StdIOPlayer {
         return Move(Cell::new( v[0], v[1]));
     }
 
-    fn notify_error(&mut self, err : board::MoveError){
+    fn handle_error(&self, err : board::MoveError){
         println!("errr!");
     }
-    fn send_result(&mut self, my_score : u32, other_score : u32){
+    fn handle_result(&self, my_score : u32, other_score : u32){
         println!("Result: {} - {}", my_score, other_score);
     }
 }

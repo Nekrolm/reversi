@@ -5,12 +5,12 @@ use std::ops::Deref;
 use futures;
 use crate::game::board::Board;
 
+use crate::player::{Player, MoveResponse};
 pub mod board;
-pub mod player;
 
 struct Players {
-    current : Box<dyn player::Player>,
-    next :  Box<dyn player::Player>,
+    current : Box<dyn Player>,
+    next :  Box<dyn Player>,
 }
 
 impl Players {
@@ -25,11 +25,11 @@ pub struct  Game  {
     players : Players,
 }
 
-fn can_move(player : &dyn player::Player, board : &board::Board) -> bool {
+fn can_move(player : &dyn Player, board : &board::Board) -> bool {
     return board.can_move(player.player_id());
 }
 
-fn try_move_cell(player : &dyn player::Player, cell : board::Cell, board : &mut board::Board)
+fn try_move_cell(player : &dyn Player, cell : board::Cell, board : &mut board::Board)
     -> Option<board::MoveError> {
     return board.try_move(cell,player.player_id());
 }
@@ -46,7 +46,7 @@ impl Game  {
                     }
                     return false;
                 }
-                use player::MoveResponse::{*};
+                use MoveResponse::{*};
                 match current.request_move(&self.board) {
                     Move(cell) => {
                         match try_move_cell(current.as_ref(), cell, &mut self.board) {
@@ -70,7 +70,7 @@ impl Game  {
         self.players.next.send_result(next_p_score, current_p_score);
     }
 
-    pub fn new(first : Box<dyn player::Player>, second : Box<dyn player::Player>) -> Game {
+    pub fn new(first : Box<dyn Player>, second : Box<dyn Player>) -> Game {
         return Game{board :Board::new(),
                     players: Players{
                          current:first,

@@ -1,10 +1,10 @@
-use ncurses;
+
 pub use async_trait::async_trait;
 use crate::game::board::{PlayerId, Board, Cell, MoveError, advance};
 use ncurses::CURSOR_VISIBILITY::CURSOR_VERY_VISIBLE;
-use crate::game::player::Player;
-use crate::game::player::MoveResponse;
-use ncurses::ll::winch;
+use crate::player::MoveResponse;
+use crate::view::BoardView;
+use ncurses;
 
 pub struct NCursesWindow {
     window : ncurses::WINDOW
@@ -77,34 +77,31 @@ impl Drop for NCursesWindow {
 }
 
 use std::rc::Rc;
+use std::cell::Cell as StdCell;
 
-pub struct CursesPlayer {
-    id : PlayerId,
+pub struct NCursesView {
     window : Rc<NCursesWindow>,
-    position : Cell
+    position : StdCell<Cell>
 }
 
-impl CursesPlayer {
-    pub fn new (player : PlayerId, window : Rc<NCursesWindow>) -> Self {
-        return Self { id : player ,  window, position : Cell::new(0,0)}
+impl NCursesView {
+    pub fn new (window : Rc<NCursesWindow>) -> Self {
+        return Self { window, position : StdCell::new(Cell::new(0,0))}
     }
 }
 
-impl Player for CursesPlayer {
-    fn player_id(&self) -> PlayerId {
-        return self.id;
-    }
+impl BoardView for NCursesView {
 
-    fn request_move(&mut self, board : &Board) -> MoveResponse {
+    fn input(&self, player : PlayerId, board : &Board) -> MoveResponse {
         loop {
-            self.window.draw(self.player_id(), board, self.position);
+            self.window.draw(player, board, self.position.get());
             match self.window.action() {
                 Action::Exit => return MoveResponse::Exit,
-                Action::Accept => return MoveResponse::Move(self.position),
+                Action::Accept => return MoveResponse::Move(self.position.get()),
                 Action::Offset(offset) => {
-                    let new_pos = advance(self.position, offset);
+                    let new_pos = advance(self.position.get(), offset);
                     if board.is_valid_cell(new_pos) {
-                        self.position = new_pos;
+                        self.position.set(new_pos);
                     }
                 }
             }
@@ -112,10 +109,10 @@ impl Player for CursesPlayer {
         return MoveResponse::Exit;
     }
 
-    fn notify_error(&mut self, err : MoveError){
-        println!("errr!");
+    fn handle_error(&self, err : MoveError){
+        /*TODO*/
     }
-    fn send_result(&mut self, my_score : u32, other_score : u32){
+    fn handle_result(& self, my_score : u32, other_score : u32){
         println!("Result: {} - {}", my_score, other_score);
     }
 }
